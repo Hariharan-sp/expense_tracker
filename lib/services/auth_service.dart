@@ -5,11 +5,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
-
-  // Stream to listen for login/logout changes
   Stream<User?> get authStateChanges => _auth.authStateChanges();
-
-  // Current user getter
   User? get currentUser => _auth.currentUser;
 
   // ------------------------------
