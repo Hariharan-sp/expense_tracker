@@ -18,7 +18,7 @@ import 'services/auth_service.dart';
 import 'screens/login.dart';
 
 const String kGoogleScriptUrl =
-    "https://script.google.com/macros/s/AKfycbzbKhOjArb12rdZapYPot35WR8Gv09SYETFy2l5SR5HxJ4WQvs5dalVQFiXiDUM4durIg/exec";
+    "https://script.google.com/macros/s/AKfycbz0xFrC1-2A_Wnc6-3ZgsRIDoiGL6IZ974TTVig_KL2xiH7aTUndNha6oMfqt_WL0aHEw/exec";
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

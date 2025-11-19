@@ -59,6 +59,7 @@ class ExpenseProvider extends ChangeNotifier {
   }
 
   Future<void> deleteExpense(String id) async {
+    print('Deleting expense with id: $id');
     _expenses.removeWhere((e) => e.id == id);
     notifyListeners();
   }

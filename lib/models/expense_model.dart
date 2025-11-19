@@ -23,20 +23,25 @@ class Expense {
   }) : id = id ?? UniqueKey().toString();
 
   factory Expense.fromRow(List<dynamic> row, String userEmail) {
-    final dateStr = row.length > 0 ? row[0].toString().trim() : '';
+    final dateStr = row.isNotEmpty ? row[0].toString().trim() : '';
     final category = row.length > 1 ? row[1].toString() : '';
     final description = row.length > 2 ? row[2].toString() : '';
     final amount = row.length > 3
         ? double.tryParse(row[3].toString().replaceAll(',', '')) ?? 0.0
         : 0.0;
     final mode = row.length > 4 ? row[4].toString() : '';
-    bool isIncome = false;
-    // Optional: Infer based on category, description, or spreadsheet logic
-    if (category.toLowerCase() == 'salary') isIncome = true;
-    // Set date as "yyyy-MM-dd" format, fallback to today if empty
-    final dateIso = dateStr.isNotEmpty
-        ? dateStr.substring(0, 10)
-        : DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+    bool isIncome = category.toLowerCase() == 'salary';
+
+
+    DateTime parsedDate;
+    try {
+      parsedDate = DateTime.parse(dateStr).toLocal();
+    } catch (_) {
+      parsedDate = DateFormat('yyyy-MM-dd').parse(dateStr, true).toLocal();
+    }
+    final dateIso = DateFormat('yyyy-MM-dd').format(parsedDate);
+
     return Expense(
       date: dateIso,
       category: category.isEmpty ? 'Misc' : category,
@@ -47,6 +52,7 @@ class Expense {
       userEmail: userEmail,
     );
   }
+
 
   Expense copyWith({
     String? id,
