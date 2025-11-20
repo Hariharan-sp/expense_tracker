@@ -38,6 +38,8 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
       _isIncome = e.isIncome;
     } else {
       _dateCtl.text = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      _catCtl.text = ""; // dropdown will show placeholder
+      _modeCtl.text = "";
     }
   }
 
@@ -76,14 +78,17 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+
     final prov = Provider.of<ExpenseProvider>(context, listen: false);
+
     setState(() => _sending = true);
+
     final exp = Expense(
       date: _dateCtl.text,
-      category: _catCtl.text.trim().isEmpty ? 'Misc' : _catCtl.text.trim(),
+      category: _catCtl.text.trim(),
       description: _descCtl.text.trim(),
       amount: double.tryParse(_amtCtl.text.trim().replaceAll(',', '')) ?? 0.0,
-      mode: _modeCtl.text.trim().isEmpty ? 'Cash' : _modeCtl.text.trim(),
+      mode: _modeCtl.text.trim(),
       isIncome: _isIncome,
       userEmail: FirebaseAuth.instance.currentUser!.email!,
     );
@@ -91,18 +96,7 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
     if (widget.existing == null) {
       await prov.addExpense(exp);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Row(
-            children: [
-              Icon(Icons.check_circle_outline, color: Colors.white),
-              SizedBox(width: 12),
-              Text('Transaction added successfully'),
-            ],
-          ),
-          backgroundColor: Colors.green.shade600,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
+        successSnack("Transaction added successfully"),
       );
     } else {
       final updated = widget.existing!.copyWith(
@@ -113,28 +107,40 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
         mode: exp.mode,
         isIncome: exp.isIncome,
       );
-      await prov.updateExpense(updated);
+      await prov.updateExpense(widget.existing!, updated);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Row(
-            children: [
-              Icon(Icons.check_circle_outline, color: Colors.white),
-              SizedBox(width: 12),
-              Text('Transaction updated successfully'),
-            ],
-          ),
-          backgroundColor: Colors.green.shade600,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
+        successSnack("Transaction updated successfully"),
       );
     }
+
     setState(() => _sending = false);
+
     if (mounted) Navigator.pop(context);
+  }
+
+  SnackBar successSnack(String msg) {
+    return SnackBar(
+      content: Row(
+        children: [
+          const Icon(Icons.check_circle_outline, color: Colors.white),
+          const SizedBox(width: 12),
+          Text(msg),
+        ],
+      ),
+      backgroundColor: Colors.green.shade600,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final prov = Provider.of<ExpenseProvider>(context);
+
+    // 🔥 Dynamic dropdown values from Spreadsheet
+    final categories = prov.expenses.map((e) => e.category).toSet().toList();
+    final modes = prov.expenses.map((e) => e.mode).toSet().toList();
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
@@ -155,35 +161,10 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
         child: Form(
           key: _formKey,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Transaction Type',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                padding: const EdgeInsets.all(6),
-                child: Row(
-                  children: [
-                    Expanded(child: _toggleButton('Expense', !_isIncome, Colors.red.shade400, () => setState(() => _isIncome = false))),
-                    const SizedBox(width: 8),
-                    Expanded(child: _toggleButton('Income', _isIncome, Colors.green.shade400, () => setState(() => _isIncome = true))),
-                  ],
-                ),
-              ),
+              _buildTypeToggle(),
               const SizedBox(height: 24),
+
               _buildTextField(
                 controller: _dateCtl,
                 label: 'Date',
@@ -192,21 +173,29 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
                 onTap: _pickDate,
                 validator: (v) => v == null || v.isEmpty ? 'Select date' : null,
               ),
+
               const SizedBox(height: 16),
-              _buildTextField(
+              _buildTextOrDropdown(
+                label: "Category",
                 controller: _catCtl,
-                label: 'Category',
                 icon: Icons.category_rounded,
-                hint: 'Food, Salary, Transport, etc.',
+                items: categories,
               ),
-              const SizedBox(height: 16),
+              // 🔽 CATEGORY DROPDOWN
+
+
+
+            const SizedBox(height: 16),
+
               _buildTextField(
                 controller: _descCtl,
                 label: 'Description',
                 icon: Icons.description_rounded,
                 hint: 'Optional notes',
               ),
+
               const SizedBox(height: 16),
+
               _buildTextField(
                 controller: _amtCtl,
                 label: 'Amount',
@@ -214,41 +203,65 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
                 keyboardType: TextInputType.number,
                 validator: (v) => v == null || v.isEmpty ? 'Enter amount' : null,
               ),
+
               const SizedBox(height: 16),
-              _buildTextField(
+
+              // 🔽 PAYMENT MODE DROPDOWN
+              _buildTextOrDropdown(
+                label: "Payment Mode",
                 controller: _modeCtl,
-                label: 'Payment Mode',
                 icon: Icons.payment_rounded,
-                hint: 'Cash, Card, UPI, etc.',
+                items: modes,
               ),
+
+
               const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _sending ? null : _submit,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                    backgroundColor: const Color(0xFF6366F1),
-                    foregroundColor: Colors.white,
-                    elevation: 2,
-                  ),
-                  child: _sending
-                      ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                  )
-                      : const Text(
-                    'Save Transaction',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
+
+              _buildSubmitButton(),
+
+
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTypeToggle() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Transaction Type',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+        const SizedBox(height: 12),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.all(6),
+          child: Row(
+            children: [
+              Expanded(
+                child: _toggleButton("Expense", !_isIncome, Colors.red.shade400,
+                        () => setState(() => _isIncome = false)),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _toggleButton("Income", _isIncome, Colors.green.shade400,
+                        () => setState(() => _isIncome = true)),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -267,8 +280,12 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
           children: [
             Icon(
               isActive
-                  ? (label == 'Income' ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded)
-                  : (label == 'Income' ? Icons.arrow_downward_outlined : Icons.arrow_upward_outlined),
+                  ? (label == 'Income'
+                  ? Icons.arrow_downward_rounded
+                  : Icons.arrow_upward_rounded)
+                  : (label == 'Income'
+                  ? Icons.arrow_downward_outlined
+                  : Icons.arrow_upward_outlined),
               color: isActive ? Colors.white : Colors.grey.shade600,
               size: 20,
             ),
@@ -286,6 +303,66 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
       ),
     );
   }
+
+  Widget _buildTextOrDropdown({
+    required String label,
+    required TextEditingController controller,
+    required IconData icon,
+    required List<String> items,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextFormField(
+              controller: controller,
+              decoration: InputDecoration(
+                labelText: label,
+                prefixIcon: Icon(icon, color: Color(0xFF6366F1)),
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+              validator: (v) =>
+              v == null || v.trim().isEmpty ? "Enter or select $label" : null,
+            ),
+          ),
+
+          // Dropdown icon button
+          Container(
+            margin: const EdgeInsets.only(right: 6),
+            child: PopupMenuButton<String>(
+              icon: const Icon(Icons.arrow_drop_down, size: 32, color: Color(0xFF6366F1)),
+              onSelected: (val) => controller.text = val,
+              itemBuilder: (context) {
+                return items
+                    .map((e) => PopupMenuItem<String>(
+                  value: e,
+                  child: Text(e),
+                ))
+                    .toList();
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
 
   Widget _buildTextField({
     required TextEditingController controller,
@@ -315,18 +392,42 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
         onTap: onTap,
         keyboardType: keyboardType,
         validator: validator,
-        style: const TextStyle(fontSize: 15),
         decoration: InputDecoration(
           labelText: label,
           hintText: hint,
-          prefixIcon: Icon(icon, color: const Color(0xFF6366F1), size: 22),
+          prefixIcon: Icon(icon, color: Color(0xFF6366F1)),
+          filled: true,
+          fillColor: Colors.white,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
             borderSide: BorderSide.none,
           ),
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSubmitButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: _sending ? null : _submit,
+        style: ElevatedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          backgroundColor: const Color(0xFF6366F1),
+          foregroundColor: Colors.white,
+          elevation: 2,
+        ),
+        child: _sending
+            ? const SizedBox(
+          height: 20,
+          width: 20,
+          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+        )
+            : const Text(
+          'Save Transaction',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
       ),
     );

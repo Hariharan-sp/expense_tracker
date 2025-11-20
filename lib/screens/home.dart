@@ -1,7 +1,6 @@
 import 'package:expense_tracker/screens/profile.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -10,6 +9,7 @@ import '../main.dart';
 import '../models/expense_model.dart';
 import '../provider/provider.dart';
 import 'add_expense.dart';
+import 'filter_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -29,7 +29,6 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  @override
   @override
   Widget build(BuildContext context) {
     final prov = Provider.of<ExpenseProvider>(context);
@@ -96,6 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 // Optionally add a sign-out button here
               ],
+
             ),
             const SizedBox(height: 4),
           ],
@@ -107,12 +107,6 @@ class _HomeScreenState extends State<HomeScreen> {
             tooltip: 'Refresh',
           ),
 
-          if (prov.categoryFilter != null)
-            IconButton(
-              icon: const Icon(Icons.filter_alt_off_rounded, color: Colors.white),
-              onPressed: () => prov.setCategoryFilter(null),
-              tooltip: 'Clear filter',
-            ),
 
           // 👉 NEW PROFILE BUTTON
           IconButton(
@@ -130,15 +124,21 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
 
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.push(
-            context, MaterialPageRoute(builder: (_) => AddEditExpenseScreen())),
-        label: const Text('Add Transaction', style: TextStyle(fontWeight: FontWeight.w600)),
-        icon: const Icon(Icons.add_rounded),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => AddEditExpenseScreen()),
+          );
+        },
         backgroundColor: const Color(0xFF6366F1),
-        foregroundColor: Colors.white,
-        elevation: 4,
+        child: const Icon(Icons.add_rounded, size: 28),
       ),
+
+      bottomNavigationBar: _buildBottomBar(),
+
+
       body: prov.loading
           ? const Center(child: CircularProgressIndicator())
           : prov.error.isNotEmpty
@@ -177,14 +177,12 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHeader(context),
-             const SizedBox(height: 20),
+            if(_tabIndex!=0) _buildHeader(context),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Column(
                 children: [
-                  _buildTabs(),
-                  const SizedBox(height: 20),
+                  _buildFilterButtons(context),
                   _buildContent(context),
                 ],
               ),
@@ -369,56 +367,154 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildTabs() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+  Widget _bottomTabItem(String label, int index) {
+    final bool active = index == _tabIndex;
+
+    return GestureDetector(
+      onTap: () => setState(() => _tabIndex = index),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: active ? const Color(0xFF6366F1) : Colors.grey.shade600,
+              ),
+            ),
+            if (active)
+              Container(
+                margin: const EdgeInsets.only(top: 4),
+                height: 4,
+                width: 22,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF6366F1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              )
+          ],
+        ),
       ),
-      padding: const EdgeInsets.all(6),
+    );
+  }
+
+
+  Widget _buildBottomBar() {
+    return BottomAppBar(
+      shape: const CircularNotchedRectangle(),
+      notchMargin: 8,
+      color: Colors.white,
+      elevation: 12,
+      child: Container(
+        height: 70,
+        decoration: const BoxDecoration(
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(28),
+            topRight: Radius.circular(28),
+          ),
+          color: Colors.white,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _bottomTabItem("Day", 0),
+            _bottomTabItem("Week", 1),
+            const SizedBox(width: 40), // space for FAB
+            _bottomTabItem("Month", 2),
+            _bottomTabItem("All", 3),
+          ],
+        ),
+      ),
+    );
+  }
+
+
+
+  // Add this to your HomeScreen, for example in the app bar actions or in a new section
+  Widget _buildFilterButtons(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
       child: Row(
         children: [
-          Expanded(child: _tabButton('Today', 0)),
-          Expanded(child: _tabButton('Week', 1)),
-          Expanded(child: _tabButton('Month', 2)),
-          Expanded(child: _tabButton('All', 3)),
+          Visibility(
+            visible:_tabIndex==0 ,
+            child: Expanded(
+              child: _buildFilterButton(
+                context,
+                'Day',
+                Icons.calendar_today_rounded,
+                Colors.blue,
+                    () => _navigateToFilteredScreen(context, 'day'),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Visibility(
+            visible:_tabIndex==1 ,
+            child: Expanded(
+              child: _buildFilterButton(
+                context,
+                'Week',
+                Icons.calendar_view_week_rounded,
+                Colors.purple,
+                    () => _navigateToFilteredScreen(context, 'week'),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Visibility(
+            visible:_tabIndex==2 ,
+            child: Expanded(
+              child: _buildFilterButton(
+                context,
+                'Month',
+                Icons.calendar_view_month_rounded,
+                Colors.orange,
+                    () => _navigateToFilteredScreen(context, 'month'),
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _tabButton(String label, int idx) {
-    final active = idx == _tabIndex;
+  Widget _buildFilterButton(BuildContext context, String text, IconData icon, Color color, VoidCallback onTap) {
     return GestureDetector(
-      onTap: () => setState(() => _tabIndex = idx),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          gradient: active
-              ? const LinearGradient(
-            colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-          )
-              : null,
+          color: color.withOpacity(0.1),
           borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.3)),
         ),
-        child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-              color: active ? Colors.white : Colors.grey.shade600,
-              fontWeight: active ? FontWeight.bold : FontWeight.w600,
-              fontSize: 14,
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 20),
+            const SizedBox(height: 4),
+            Text(
+              text,
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+              ),
             ),
-          ),
+          ],
         ),
+      ),
+    );
+  }
+
+  void _navigateToFilteredScreen(BuildContext context, String filterType) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FilteredTransactionsScreen(filterType: filterType),
       ),
     );
   }

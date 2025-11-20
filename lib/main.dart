@@ -18,7 +18,7 @@ import 'services/auth_service.dart';
 import 'screens/login.dart';
 
 const String kGoogleScriptUrl =
-    "https://script.google.com/macros/s/AKfycbz0xFrC1-2A_Wnc6-3ZgsRIDoiGL6IZ974TTVig_KL2xiH7aTUndNha6oMfqt_WL0aHEw/exec";
+    "https://script.google.com/macros/s/AKfycbxOoLNRe2VBlEJQ8sdsXcyqKx-vq9NZjfmJqn4vTcz0DEkZR7yL-9y6V8-OxQ5z-ZXYIg/exec";
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -173,56 +173,56 @@ class ExpenseList extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 6),
-                Expanded(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      InkWell(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => AddEditExpenseScreen(existing: e),
-                            ),
-                          );
-                        },
-                        borderRadius: BorderRadius.circular(8),
-                        child: const Padding(
-                          padding: EdgeInsets.all(6),
-                          child: Icon(Icons.edit, size: 18),
-                        ),
-                      ),
-                      InkWell(
-                        onTap: () async {
-                          final ok = await showDialog<bool>(
-                            context: context,
-                            builder: (_) => AlertDialog(
-                              title: const Text('Delete Transaction'),
-                              content: const Text('Are you sure?'),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context, false),
-                                  child: const Text('Cancel'),
-                                ),
-                                ElevatedButton(
-                                  onPressed: () => Navigator.pop(context, true),
-                                  child: const Text('Delete'),
-                                ),
-                              ],
-                            ),
-                          );
-                  
-                          if (ok == true) prov.deleteExpense(e.id);
-                        },
-                        borderRadius: BorderRadius.circular(8),
-                        child: const Padding(
-                          padding: EdgeInsets.all(6),
-                          child: Icon(Icons.delete, size: 18),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                // Expanded(
+                //   child: Row(
+                //     mainAxisSize: MainAxisSize.min,
+                //     children: [
+                //       InkWell(
+                //         onTap: () {
+                //           Navigator.push(
+                //             context,
+                //             MaterialPageRoute(
+                //               builder: (_) => AddEditExpenseScreen(existing: e),
+                //             ),
+                //           );
+                //         },
+                //         borderRadius: BorderRadius.circular(8),
+                //         child: const Padding(
+                //           padding: EdgeInsets.all(6),
+                //           child: Icon(Icons.edit, size: 18),
+                //         ),
+                //       ),
+                //       InkWell(
+                //         onTap: () async {
+                //           final ok = await showDialog<bool>(
+                //             context: context,
+                //             builder: (_) => AlertDialog(
+                //               title: const Text('Delete Transaction'),
+                //               content: const Text('Are you sure?'),
+                //               actions: [
+                //                 TextButton(
+                //                   onPressed: () => Navigator.pop(context, false),
+                //                   child: const Text('Cancel'),
+                //                 ),
+                //                 ElevatedButton(
+                //                   onPressed: () => Navigator.pop(context, true),
+                //                   child: const Text('Delete'),
+                //                 ),
+                //               ],
+                //             ),
+                //           );
+                //
+                //           if (ok == true) prov.deleteExpense(e);
+                //         },
+                //         borderRadius: BorderRadius.circular(8),
+                //         child: const Padding(
+                //           padding: EdgeInsets.all(6),
+                //           child: Icon(Icons.delete, size: 18),
+                //         ),
+                //       ),
+                //     ],
+                //   ),
+                // ),
               ],
             ),
 
