@@ -120,6 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
 
+
           const SizedBox(width: 7),
         ],
 
@@ -133,7 +134,7 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         },
         backgroundColor: const Color(0xFF6366F1),
-        child: const Icon(Icons.add_rounded, size: 28),
+        child: const Icon(Icons.add_rounded, size: 28,color: Colors.white,),
       ),
 
       bottomNavigationBar: _buildBottomBar(),
@@ -177,12 +178,11 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if(_tabIndex!=0) _buildHeader(context),
+            if(_tabIndex!=0&&_tabIndex!=1) _buildHeader(context),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Column(
                 children: [
-                  _buildFilterButtons(context),
                   _buildContent(context),
                 ],
               ),
@@ -441,40 +441,34 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Visibility(
             visible:_tabIndex==0 ,
-            child: Expanded(
-              child: _buildFilterButton(
-                context,
-                'Day',
-                Icons.calendar_today_rounded,
-                Colors.blue,
-                    () => _navigateToFilteredScreen(context, 'day'),
-              ),
+            child: _buildFilterButton(
+              context,
+              'Day',
+              Icons.calendar_today_rounded,
+              Colors.blue,
+                  () => _navigateToFilteredScreen(context, 'day'),
             ),
           ),
           const SizedBox(width: 8),
           Visibility(
             visible:_tabIndex==1 ,
-            child: Expanded(
-              child: _buildFilterButton(
-                context,
-                'Week',
-                Icons.calendar_view_week_rounded,
-                Colors.purple,
-                    () => _navigateToFilteredScreen(context, 'week'),
-              ),
+            child: _buildFilterButton(
+              context,
+              'Week',
+              Icons.calendar_view_week_rounded,
+              Colors.purple,
+                  () => _navigateToFilteredScreen(context, 'week'),
             ),
           ),
           const SizedBox(width: 8),
           Visibility(
             visible:_tabIndex==2 ,
-            child: Expanded(
-              child: _buildFilterButton(
-                context,
-                'Month',
-                Icons.calendar_view_month_rounded,
-                Colors.orange,
-                    () => _navigateToFilteredScreen(context, 'month'),
-              ),
+            child: _buildFilterButton(
+              context,
+              'Month',
+              Icons.calendar_view_month_rounded,
+              Colors.orange,
+                  () => _navigateToFilteredScreen(context, 'month'),
             ),
           ),
         ],
@@ -548,19 +542,26 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        SizedBox(height: 10),
         if (list.isNotEmpty) ...[
           _CategoryChart(list),
-          const SizedBox(height: 24),
+          const SizedBox(height: 10),
         ],
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
+            Expanded(child: _buildFilterButtons(context)),
             const Text(
               'Transactions',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
             ),
           ],
         ),
+
         const SizedBox(height: 12),
         ExpenseList(expenses: list),
       ],
@@ -643,39 +644,95 @@ class _CategoryChart extends StatelessWidget {
               ),
               const SizedBox(width: 30),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: items.take(5).map((e) {
-                    final idx = items.indexOf(e);
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8.0),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 14,
-                            height: 14,
-                            decoration: BoxDecoration(
-                              color: colors[idx % colors.length],
-                              borderRadius: BorderRadius.circular(4),
-                            ),
+                  child:Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // ---------- CATEGORY LIST (SCROLLABLE) ----------
+                        SizedBox(
+                          height: 170,
+                          child: ListView.builder(
+                            padding: EdgeInsets.zero,
+                            itemCount: items.length,
+                            itemBuilder: (context, index) {
+                              final e = items[index];
+                              final amount = NumberFormat.compact().format(e.value);
+
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 6.0),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 14,
+                                      height: 14,
+                                      decoration: BoxDecoration(
+                                        color: colors[index % colors.length],
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        e.key,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                    Text(
+                                      '₹$amount',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
                           ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              e.key,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                            ),
+                        ),
+
+                        const SizedBox(height: 14),
+
+                        // ---------- TOTAL AMOUNT ----------
+                        Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF3F4F6),
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          Text(
-                            '₹${NumberFormat.compact().format(e.value)}',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.summarize, size: 18, color: Colors.black54),
+                              const SizedBox(width: 8),
+                              const Text(
+                                "Total",
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              const Spacer(),
+                              Text(
+                                "₹${NumberFormat('#,###').format(total)}",
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                ),
+                        ),
+                      ],
+                    ),
+                  )
+
+
               )
             ],
           ),

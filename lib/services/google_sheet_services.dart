@@ -56,7 +56,6 @@ class GoogleSheetService {
     }
   }
 
-  // ✅ FIXED: Use POST with method parameter for UPDATE
   static Future<bool> updateExpense(Expense expense) async {
     try {
       debugPrint('=== UPDATE REQUEST ===');
